@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Who Click Fastest - Room</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-around;
+      width: 100dvw;
+      height: 100dvh;
+    }
+
+    .left-area {
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .center-area {
+      width: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-around;
+    }
+
+    .right-area {
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #game-area {
+      border: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 2rem 4rem;
+    }
+
+    #click-button {
+      padding: 2rem 4rem;
+      font-size: 1.5rem;
+      background-color: #ff5555;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: not-allowed;
+      transition: all 0.2s;
+    }
+
+    #click-button:hover {
+      background-color: #ff3333;
+      transform: scale(1.05);
+    }
+
+    #click-button:active {
+      transform: scale(0.95);
+    }
+
+    #order-fast-click-table {
+      text-align: center;
+      font-size: 1.2rem;
+    }
+
+    #players-table {
+      text-align: center;
+      font-size: 1.2rem;
+    }
+
+    .increase-score-button {
+      background-color: #4CAF50;
+    }
+
+    .decrease-score-button {
+      background-color: #f44336;
+    }
+
+    .reset-score-button {
+      background-color: #2196F3;
+    }
+
+    .increase-score-button,
+    .decrease-score-button,
+    .reset-score-button {
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      width: 1.5rem;
+    }
+
+    .coundown-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #countdown {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #ff5555;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #countdown:hover {
+      background-color: #ff3333;
+    }
+
+    #status-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #leave-button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #ff5555;
+      color: white;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div id="status-container">
+      <div id="status">Connecting...</div>
+      <button id="leave-button">Leave Room</button>
+    </div>
+
+    <div class="left-area">
+      <h1>Player List</h1>
+      <hr>
+      <table id="players-table">
+        <thead>
+          <tr>
+            <th width="100px">Player</th>
+            <th width="100px">Score</th>
+            <th width="100px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="center-area">
+      <h1>Room: <span id="room-name"></span></h1>
+      <h2>Player: <span id="player-name"></span></h2>
+      <div id="game-area">
+        <button id="click-button" disabled="true">Wait...</button>
+      </div>
+    </div>
+
+    <div class="right-area">
+      <h1>Order Fast Click</h1>
+      <table id="order-fast-click-table">
+        <thead>
+          <tr>
+            <th width="150px">Player</th>
+            <th width="150px">Time</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+      <div class="coundown-container">
+        <button id="countdown">Countdown 3 Seconds</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const roomName = localStorage.getItem("room");
+    const playerName = localStorage.getItem("name");
+    if (playerName.length > 8) {
+      localStorage.removeItem("name");
+      alert("Player name is too long");
+      window.location.href = "/";
+    }
+
+    document.getElementById("room-name").textContent = roomName;
+    document.getElementById("player-name").textContent = playerName;
+
+    if (!roomName || !playerName) {
+      window.location.href = "/";
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/room/${roomName}`;
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = function () {
+      document.getElementById("status").textContent = "Connected";
+      document.getElementById("status").style.color = "#00ff00";
+
+      socket.send(JSON.stringify({
+        type: "join",
+        name: playerName
+      }));
+    };
+
+    socket.onclose = function () {
+      document.getElementById("status").textContent = "Disconnected";
+      document.getElementById("status").style.color = "#ff0000";
+    };
+
+    socket.onerror = function (error) {
+      document.getElementById("status").textContent = "Error";
+      document.getElementById("status").style.color = "#ff0000";
+      console.error("WebSocket error:", error);
+    };
+
+    socket.onmessage = function (event) {
+      try {
+        const data = JSON.parse(event.data);
+        switch (data.type) {
+          case "players":
+            updatePlayersList(data.players);
+            break;
+          case "click":
+            handlePlayersClicked(data);
+            break;
+          case "score":
+            updateScore(data);
+            break;
+          case "clickable":
+            handleClickable(data);
+            break;
+          default:
+            console.log("Unknown message type:", data.type);
+        }
+      } catch (e) {
+        console.error("Error parsing message:", e);
+      }
+    };
+
+    document.getElementById("countdown").addEventListener("click", function () {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: "clickable",
+        }));
+      }
+    });
+
+    document.getElementById("click-button").addEventListener("click", function () {
+      const clickButton = document.getElementById("click-button");
+      clickButton.textContent = "Clicked!";
+      clickButton.disabled = true;
+      clickButton.style.pointerEvents = "not-allowed";
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          type: "click",
+          name: playerName,
+          timestamp: Date.now()
+        }));
+      }
+    });
+
+    document.getElementById("leave-button").addEventListener("click", function () {
+      localStorage.removeItem("room");
+      socket.close();
+      window.location.href = "/";
+    });
+
+
+    function updatePlayersList(players) {
+      const playersContainer = document.getElementById("players-table").getElementsByTagName('tbody')[0];
+      playersContainer.innerHTML = "";
+
+      players.forEach(player => {
+        const row = document.createElement("tr");
+        row.style.color = player.color;
+
+        const nameCell = document.createElement("td");
+        nameCell.textContent = player.name;
+        row.appendChild(nameCell);
+
+        const scoreCell = document.createElement("td");
+        scoreCell.textContent = player.score;
+        row.appendChild(scoreCell);
+
+        const actionsCell = document.createElement("td");
+
+        const increaseScoreButton = document.createElement("button");
+        increaseScoreButton.textContent = "+";
+        increaseScoreButton.className = "increase-score-button";
+        increaseScoreButton.addEventListener("click", function () {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: "increase-score",
+              name: player.name
+            }));
+          }
+        });
+
+        const decreaseScoreButton = document.createElement("button");
+        decreaseScoreButton.textContent = "-";
+        decreaseScoreButton.className = "decrease-score-button";
+        decreaseScoreButton.addEventListener("click", function () {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: "decrease-score",
+              name: player.name
+            }));
+          }
+        });
+
+        const resetScoreButton = document.createElement("button");
+        resetScoreButton.textContent = "x";
+        resetScoreButton.className = "reset-score-button";
+        resetScoreButton.addEventListener("click", function () {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: "reset-score",
+              name: player.name
+            }));
+          }
+        });
+
+        actionsCell.appendChild(increaseScoreButton);
+        actionsCell.appendChild(decreaseScoreButton);
+        actionsCell.appendChild(resetScoreButton);
+        row.appendChild(actionsCell);
+
+        playersContainer.appendChild(row);
+      });
+    }
+
+    function updateScore(data) {
+      const player = document.getElementById(data.name);
+      player.textContent = data.score;
+    }
+
+    function handlePlayersClicked(data) {
+      const players = data.players;
+      const orderFastClickTable = document.getElementById("order-fast-click-table").getElementsByTagName('tbody')[0];
+      orderFastClickTable.innerHTML = "";
+
+      players.sort((a, b) => a.timestamp - b.timestamp);
+
+      players.forEach(player => {
+        if (player.clickedTimestamp) {
+          const row = document.createElement("tr");
+          row.style.color = player.color;
+          const playerCell = document.createElement("td");
+          playerCell.textContent = player.name;
+          row.appendChild(playerCell);
+
+          const timeCell = document.createElement("td");
+          timeCell.textContent = new Date(player.clickedTimestamp).toLocaleTimeString() + "." + (player.clickedTimestamp % 1000).toString().padStart(3, '0');
+          row.appendChild(timeCell);
+
+          orderFastClickTable.appendChild(row);
+
+        }
+      });
+    }
+
+    function handleClickable(data) {
+      const clickableTime = data.clickableTime;
+      const clickButton = document.getElementById("click-button");
+      const countdownButton = document.getElementById("countdown");
+      countdownButton.style.visibility = "hidden";
+      const orderFastClickTable = document.getElementById("order-fast-click-table").getElementsByTagName('tbody')[0];
+      orderFastClickTable.innerHTML = "";
+      clickButton.disabled = true;
+      clickButton.style.pointerEvents = "not-allowed";
+      clickButton.textContent = "Wait...";
+      let countdown = clickableTime;
+      // let countdownInterval = setInterval(() => {
+      //   countdown -= 1000;
+      //   if (countdown <= 0) {
+      //     clearInterval(countdownInterval);
+      //   } else {
+      //     clickButton.textContent = `${countdown / 1000}`;
+      //   }
+      // }, 1000);
+      setTimeout(() => {
+        clickButton.textContent = "CLICK NOW!";
+        clickButton.disabled = false;
+        clickButton.style.pointerEvents = "pointer";
+        countdownButton.style.visibility = "visible";
+      }, clickableTime);
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Who Click Fastest</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      width: 480px;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #fff;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid #fff;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #fff;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="title">Who Click Fastest</h1>
+    <h2 class="description">Enter your name and click join room.</h2>
+    <input type="text" id="name-input" placeholder="Enter your name">
+    <input type="text" id="room-input" placeholder="Enter room name">
+    <button id="join-button">Join Room</button>
+  </div>
+    <script>
+      const nameInput = document.querySelector("#name-input");
+      const roomInput = document.querySelector("#room-input");
+      const joinButton = document.querySelector("#join-button");
+
+      const joinRoom = () => {
+        if (nameInput.value && roomInput.value) {
+          localStorage.setItem("name", nameInput.value);
+          localStorage.setItem("room", roomInput.value);
+          window.location.href = `/room/${roomInput.value}`;
+        } else {
+          alert("Please enter your name and room name");
+        }
+      }
+
+      joinButton.addEventListener("click", joinRoom);
+
+      const localRoom = localStorage.getItem("room");
+      if (localRoom) {
+        roomInput.value = localRoom;
+      }
+
+      const localName = localStorage.getItem("name");
+      if (localName) {
+        if (localName.length > 8) {
+          localStorage.removeItem("name");
+          alert("Player name is too long");
+        } else {
+          nameInput.value = localName;
+        }
+      }
+    </script>
+</body>
+</html>
